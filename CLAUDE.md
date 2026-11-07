@@ -45,7 +45,7 @@ Jinja2. `base.html` defines the shared shell: a `<nav>` with brand + Sign in / *
 
 - **Design is mockup-driven.** The live git history shows UI work done "to match mockup": hero sections and landing styling are hand-written CSS overrides. Preserve that base style (cream `#f7f6f3` paper, dark green `#1a472a`, serif display font) rather than replacing it with a component framework.
 - **Comments with "Step N"** mark deliberately unfinished scaffolding for students — don't treat them as TODOs to implement spontaneously; the assignments are done in order.
-- The app name in the UI is **Spendly**; the gitignore comment shows a working DB named `expense_tracker.db`.
+- The app name in the UI is **Spendly**; the working SQLite DB is named `spendly.db` (created in the project root, gitignored).
 - Port **5001** is intentional (not the Flask default 5000) — keep the hardcoded `port=5001` in `app.py`.
 
 ## Notes
