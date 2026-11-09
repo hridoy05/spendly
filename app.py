@@ -97,7 +97,18 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    conn = get_db()
+    user = conn.execute(
+        "SELECT id, name, email, created_at FROM users WHERE id = ?",
+        (session["user_id"],),
+    ).fetchone()
+    conn.close()
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+    return render_template("profile.html", user=user)
 
 
 @app.route("/expenses/add")

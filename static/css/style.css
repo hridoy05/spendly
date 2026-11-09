@@ -430,6 +430,16 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 0.4rem;
 }
 
+.profile-value {
+    padding: 0.6rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+}
+
 .form-input {
     width: 100%;
     padding: 0.6rem 0.875rem;
@@ -621,6 +631,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 600px) {
-    .nav-links a:not(.nav-cta) { display: none; }
+    .nav-links a:not(.nav-cta):not(.nav-user) { display: none; }
     .hero { padding: 3rem 1rem 2rem; }
 }
