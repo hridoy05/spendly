@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 from flask import Flask, render_template, request, redirect, url_for, session
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from database.db import get_db, init_db, seed_db
 
@@ -64,8 +64,31 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        conn = get_db()
+        user = conn.execute(
+            "SELECT id, name, password_hash FROM users WHERE email = ?",
+            (email,),
+        ).fetchone()
+        conn.close()
+
+        if user is not None and check_password_hash(user["password_hash"], password):
+            session.clear()
+            session["user_id"] = user["id"]
+            session["user_name"] = user["name"]
+            return redirect(url_for("dashboard"))
+
+        error = "Invalid email or password."
+        return render_template("login.html", error=error)
+
     return render_template("login.html")
 
 
