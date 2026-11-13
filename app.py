@@ -119,10 +119,11 @@ def logout():
     return redirect(url_for("landing"))
 
 
-@app.route("/profile")
+@app.route("/profile", methods=["GET", "POST"])
 def profile():
     if "user_id" not in session:
         return redirect(url_for("login"))
+
     conn = get_db()
     user = conn.execute(
         "SELECT id, name, email, created_at FROM users WHERE id = ?",
@@ -132,7 +133,79 @@ def profile():
     if user is None:
         session.clear()
         return redirect(url_for("login"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+
+        error = None
+        if not name or not email:
+            error = "Name and email are required."
+        elif "@" not in email:
+            error = "Enter a valid email address."
+
+        if not error:
+            conn = get_db()
+            try:
+                conn.execute(
+                    "UPDATE users SET name = ?, email = ? WHERE id = ?",
+                    (name, email, session["user_id"]),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                error = "That email is already in use by another account."
+            finally:
+                conn.close()
+
+            if error is None:
+                session["user_name"] = name
+                return redirect(url_for("profile"))
+
+        return render_template(
+            "profile.html", user=user, error=error, password_error=None
+        )
+
     return render_template("profile.html", user=user)
+
+
+@app.route("/profile/password", methods=["POST"])
+def change_password():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT id, name, email, created_at, password_hash FROM users WHERE id = ?",
+        (session["user_id"],),
+    ).fetchone()
+    if user is None:
+        conn.close()
+        session.clear()
+        return redirect(url_for("login"))
+
+    error = None
+    if not check_password_hash(user["password_hash"], current_password):
+        error = "Current password is incorrect."
+    elif len(new_password) < 8:
+        error = "New password must be at least 8 characters."
+
+    if error is None:
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), session["user_id"]),
+        )
+        conn.commit()
+
+    conn.close()
+    if error is None:
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "profile.html", user=user, error=None, password_error=error
+    )
 
 
 @app.route("/expenses/add")
