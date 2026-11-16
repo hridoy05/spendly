@@ -1,11 +1,11 @@
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, date
 
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from database.db import get_db, init_db, seed_db
+from database.db import get_db, init_db, seed_db, CATEGORIES
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
@@ -258,9 +258,68 @@ def change_password():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    today = date.today().isoformat()
+
+    if request.method == "POST":
+        form = {
+            "amount": request.form.get("amount", "").strip(),
+            "category": request.form.get("category", "").strip(),
+            "date": request.form.get("date", "").strip(),
+            "description": request.form.get("description", "").strip(),
+        }
+
+        error = None
+        try:
+            amount = float(form["amount"])
+        except (ValueError, TypeError):
+            amount = None
+        if form["amount"] and (amount is None or amount <= 0):
+            error = "Amount must be a positive number."
+        elif form["category"] not in CATEGORIES:
+            error = "Choose a valid category."
+        else:
+            try:
+                datetime.strptime(form["date"], "%Y-%m-%d")
+            except (ValueError, TypeError):
+                error = "Enter a valid date."
+
+        if not error:
+            conn = get_db()
+            conn.execute(
+                "INSERT INTO expenses (user_id, amount, category, date, description)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (
+                    session["user_id"],
+                    amount,
+                    form["category"],
+                    form["date"],
+                    form["description"] or None,
+                ),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("profile"))
+
+        return render_template(
+            "add_expense.html",
+            categories=CATEGORIES,
+            form=form,
+            error=error,
+            today=today,
+        )
+
+    return render_template(
+        "add_expense.html",
+        categories=CATEGORIES,
+        form={},
+        error=None,
+        today=today,
+    )
 
 
 @app.route("/expenses/<int:id>/edit")

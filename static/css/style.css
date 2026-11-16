@@ -721,3 +721,30 @@ a { color: inherit; text-decoration: none; }
     color: var(--ink-muted);
     font-size: 0.9rem;
 }
+
+.auth-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.auth-card-heading .form-heading { margin-bottom: 0; }
+
+.expense-add {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.7rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.expense-add:hover {
+    background: var(--accent);
+    color: var(--paper);
+}
