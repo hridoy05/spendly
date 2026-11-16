@@ -64,6 +64,46 @@
             </div>
         </div>
 
+        <div class="auth-card">
+            <h2 class="form-heading">Expenses</h2>
+
+            <form method="GET" action="{{ url_for('profile') }}" class="expense-filter">
+                <div class="form-group">
+                    <label for="start">From</label>
+                    <input type="date" id="start" name="start"
+                           class="form-input" value="{{ filter_start }}">
+                </div>
+                <div class="form-group">
+                    <label for="end">To</label>
+                    <input type="date" id="end" name="end"
+                           class="form-input" value="{{ filter_end }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-submit">Filter</button>
+                    <a href="{{ url_for('profile') }}" class="btn-submit btn-submit-secondary">Clear</a>
+                </div>
+            </form>
+
+            {% if expenses %}
+            <ul class="expense-list">
+                {% for e in expenses %}
+                <li class="expense-row">
+                    <div class="expense-main">
+                        <span class="expense-category">{{ e["category"] }}</span>
+                        <span class="expense-date">{{ e["date"] }}</span>
+                        {% if e["description"] %}
+                        <span class="expense-desc">{{ e["description"] }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="expense-amount">${{ "%.2f"|format(e["amount"]) }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="expense-empty">No expenses in this date range.</p>
+            {% endif %}
+        </div>
+
     </div>
 </section>
 

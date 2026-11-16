@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -129,10 +130,41 @@ def profile():
         "SELECT id, name, email, created_at FROM users WHERE id = ?",
         (session["user_id"],),
     ).fetchone()
-    conn.close()
     if user is None:
+        conn.close()
         session.clear()
         return redirect(url_for("login"))
+
+    # Optional date-range filter, expressed as GET query params (?start=&end=).
+    filter_start = request.args.get("start", "").strip()
+    filter_end = request.args.get("end", "").strip()
+
+    def _valid_date(value):
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    if filter_start and not _valid_date(filter_start):
+        filter_start = ""
+    if filter_end and not _valid_date(filter_end):
+        filter_end = ""
+
+    query = (
+        "SELECT id, amount, category, date, description"
+        " FROM expenses WHERE user_id = ?"
+    )
+    params = [session["user_id"]]
+    if filter_start:
+        query += " AND date >= ?"
+        params.append(filter_start)
+    if filter_end:
+        query += " AND date <= ?"
+        params.append(filter_end)
+    query += " ORDER BY date DESC"
+    expenses = conn.execute(query, params).fetchall()
+    conn.close()
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -162,10 +194,22 @@ def profile():
                 return redirect(url_for("profile"))
 
         return render_template(
-            "profile.html", user=user, error=error, password_error=None
+            "profile.html",
+            user=user,
+            error=error,
+            password_error=None,
+            expenses=expenses,
+            filter_start=filter_start,
+            filter_end=filter_end,
         )
 
-    return render_template("profile.html", user=user)
+    return render_template(
+        "profile.html",
+        user=user,
+        expenses=expenses,
+        filter_start=filter_start,
+        filter_end=filter_end,
+    )
 
 
 @app.route("/profile/password", methods=["POST"])
@@ -204,7 +248,13 @@ def change_password():
         return redirect(url_for("profile"))
 
     return render_template(
-        "profile.html", user=user, error=None, password_error=error
+        "profile.html",
+        user=user,
+        error=None,
+        password_error=error,
+        expenses=[],
+        filter_start="",
+        filter_end="",
     )
 
 
