@@ -65,7 +65,10 @@
         </div>
 
         <div class="auth-card">
-            <h2 class="form-heading">Expenses</h2>
+            <div class="auth-card-heading">
+                <h2 class="form-heading">Expenses</h2>
+                <a href="{{ url_for('add_expense') }}" class="expense-add">+ Add</a>
+            </div>
 
             <form method="GET" action="{{ url_for('profile') }}" class="expense-filter">
                 <div class="form-group">
