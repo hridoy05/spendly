@@ -311,6 +311,10 @@ def add_expense():
             form=form,
             error=error,
             today=today,
+            form_action=url_for("add_expense"),
+            form_title="Add an expense",
+            form_subtitle="Record what you spent today",
+            form_submit="Add expense",
         )
 
     return render_template(
@@ -319,12 +323,87 @@ def add_expense():
         form={},
         error=None,
         today=today,
+        form_action=url_for("add_expense"),
+        form_title="Add an expense",
+        form_subtitle="Record what you spent today",
+        form_submit="Add expense",
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    expense = conn.execute(
+        "SELECT id, amount, category, date, description"
+        " FROM expenses WHERE id = ? AND user_id = ?",
+        (id, session["user_id"]),
+    ).fetchone()
+    if expense is None:
+        conn.close()
+        return redirect(url_for("profile"))
+
+    error = None
+    if request.method == "POST":
+        form = {
+            "amount": request.form.get("amount", "").strip(),
+            "category": request.form.get("category", "").strip(),
+            "date": request.form.get("date", "").strip(),
+            "description": request.form.get("description", "").strip(),
+        }
+
+        try:
+            amount = float(form["amount"])
+        except (ValueError, TypeError):
+            amount = None
+        if form["amount"] and (amount is None or amount <= 0):
+            error = "Amount must be a positive number."
+        elif form["category"] not in CATEGORIES:
+            error = "Choose a valid category."
+        else:
+            try:
+                datetime.strptime(form["date"], "%Y-%m-%d")
+            except (ValueError, TypeError):
+                error = "Enter a valid date."
+
+        if not error:
+            conn.execute(
+                "UPDATE expenses SET amount = ?, category = ?, date = ?,"
+                " description = ? WHERE id = ? AND user_id = ?",
+                (
+                    amount,
+                    form["category"],
+                    form["date"],
+                    form["description"] or None,
+                    id,
+                    session["user_id"],
+                ),
+            )
+            conn.commit()
+            conn.close()
+            return redirect(url_for("profile"))
+    else:
+        form = {
+            "amount": str(expense["amount"]),
+            "category": expense["category"],
+            "date": expense["date"],
+            "description": expense["description"] or "",
+        }
+
+    conn.close()
+    return render_template(
+        "add_expense.html",
+        categories=CATEGORIES,
+        form=form,
+        error=error,
+        today=date.today().isoformat(),
+        form_action=url_for("edit_expense", id=id),
+        form_title="Edit expense",
+        form_subtitle="Update the details below",
+        form_submit="Save changes",
+    )
 
 
 @app.route("/expenses/<int:id>/delete")
