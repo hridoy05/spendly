@@ -406,9 +406,23 @@ def edit_expense(id):
     )
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    # Delete is destructive and must never be triggered by a GET link/prefetch;
+    # methods=["POST"] already makes GET return 405. Defensive guard below.
+    if request.method != "POST":
+        return redirect(url_for("profile"))
+
+    conn = get_db()
+    conn.execute(
+        "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+        (id, session["user_id"]),
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
