@@ -97,7 +97,28 @@ def login():
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    return render_template("dashboard.html", user_name=session.get("user_name"))
+
+    conn = get_db()
+    summary = conn.execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total"
+        " FROM expenses WHERE user_id = ?",
+        (session["user_id"],),
+    ).fetchone()
+    recent = conn.execute(
+        "SELECT id, amount, category, date, description"
+        " FROM expenses WHERE user_id = ?"
+        " ORDER BY date DESC, id DESC LIMIT 5",
+        (session["user_id"],),
+    ).fetchall()
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        user_name=session.get("user_name"),
+        expense_count=summary["n"],
+        expense_total=summary["total"],
+        recent_expenses=recent,
+    )
 
 
 @app.route("/terms")

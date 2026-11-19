@@ -6,13 +6,63 @@
 
 <section class="dashboard-section">
     <div class="dashboard-container">
-        <div class="auth-header">
-            <h1 class="auth-title">Welcome back, {{ user_name }}!</h1>
-            <p class="auth-subtitle">
-                You're signed in to Spendly. Your dashboard is a placeholder —
-                expense tracking is coming in later steps.
-            </p>
+        <div class="dashboard-header">
+            <div class="auth-header">
+                <h1 class="auth-title">Welcome back, {{ user_name }}!</h1>
+                <p class="auth-subtitle">Here's what you've been spending.</p>
+            </div>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary dashboard-add">+ Add expense</a>
         </div>
+
+        <div class="dashboard-stats">
+            <div class="auth-card stat-card">
+                <div class="stat-card-value">{{ expense_count }}</div>
+                <div class="stat-card-label">Expenses</div>
+            </div>
+            <div class="auth-card stat-card">
+                <div class="stat-card-value">${{ "%.2f"|format(expense_total) }}</div>
+                <div class="stat-card-label">Total spent</div>
+            </div>
+        </div>
+
+        <div class="auth-card">
+            <h2 class="form-heading">Recent expenses</h2>
+
+            {% if recent_expenses %}
+            <ul class="expense-list">
+                {% for e in recent_expenses %}
+                <li class="expense-row">
+                    <div class="expense-main">
+                        <span class="expense-category">{{ e["category"] }}</span>
+                        <span class="expense-date">{{ e["date"] }}</span>
+                        {% if e["description"] %}
+                        <span class="expense-desc">{{ e["description"] }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="expense-actions">
+                        <span class="expense-amount">${{ "%.2f"|format(e["amount"]) }}</span>
+                        <a href="{{ url_for('edit_expense', id=e['id']) }}" class="expense-edit">Edit</a>
+                        <form method="POST"
+                              action="{{ url_for('delete_expense', id=e['id']) }}"
+                              class="expense-delete-form"
+                              onsubmit="return confirm('Delete this expense?');">
+                            <button type="submit" class="expense-delete">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="expense-empty">No expenses yet — add your first one!</p>
+            {% endif %}
+
+            {% if expense_count > 5 %}
+            <p class="expense-more">
+                <a href="{{ url_for('profile') }}">View all {{ expense_count }} expenses</a>
+            </p>
+            {% endif %}
+        </div>
+
     </div>
 </section>
 
